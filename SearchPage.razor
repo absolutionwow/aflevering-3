@@ -1,0 +1,77 @@
+@page "/search"
+@inject HttpClient Http
+
+<h3>SearchPage</h3>
+
+<div>
+    <input @bind="searchInput" placeholder="Indtast søgeord..." />
+    <button @onclick="SearchStartsWith">Starter med</button>
+    <button @onclick="SearchContains">Indeholder</button>
+</div>
+
+@if (searchMessage != null)
+{
+    <p><em>@searchMessage</em></p>
+}
+
+@if (viewedWords != null)
+{
+    <ul>
+        @foreach (var w in viewedWords)
+        {
+            <li>@w</li>
+        }
+    </ul>
+}
+else
+{
+    <p>Venter på at ord bliver indlæst...</p>
+}
+
+@code {
+    string[]? viewedWords;
+    string[]? allWords;
+    string searchInput = "";
+    string? searchMessage;
+
+    protected override void OnInitialized()
+    {
+        viewedWords = new string[200];
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        allWords = await LoadAllWords();
+        viewedWords = allWords.Take(100).ToArray();
+    }
+
+    private void SearchStartsWith()
+    {
+        if (allWords == null) return;
+
+        var results = allWords
+            .Where(w => w.StartsWith(searchInput, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        viewedWords = results;
+        searchMessage = $"Herunder er {results.Length} ord som starter med \"{searchInput}\"";
+    }
+
+    private void SearchContains()
+    {
+        if (allWords == null) return;
+
+        var results = allWords
+            .Where(w => w.Contains(searchInput, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        viewedWords = results;
+        searchMessage = $"Herunder er {results.Length} ord som indeholder \"{searchInput}\"";
+    }
+
+    private async Task<string[]> LoadAllWords()
+    {
+        string content = await Http.GetStringAsync("sample-data/words.txt");
+        return content.Split("\n");
+    }
+}
