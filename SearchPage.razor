@@ -14,14 +14,19 @@
     <p><em>@searchMessage</em></p>
 }
 
-@if (viewedWords != null)
+@if (filteredWords != null)
 {
     <ul>
-        @foreach (var w in viewedWords)
+        @foreach (var w in filteredWords.Take(visibleCount))
         {
             <li>@w</li>
         }
     </ul>
+
+    @if (visibleCount < filteredWords.Length)
+    {
+        <button @onclick="ShowMore">flere...</button>
+    }
 }
 else
 {
@@ -29,44 +34,50 @@ else
 }
 
 @code {
-    string[]? viewedWords;
-    string[]? allWords;
+    string[]? filteredWords;   // det aktuelle søgeresultat (eller de første 100 ved start)
+    string[]? allWords;        // alle ord fra filen
     string searchInput = "";
     string? searchMessage;
+    int visibleCount = 10;
 
     protected override void OnInitialized()
     {
-        viewedWords = new string[200];
+        filteredWords = new string[0];
     }
 
     protected override async Task OnInitializedAsync()
     {
         allWords = await LoadAllWords();
-        viewedWords = allWords.Take(100).ToArray();
+        filteredWords = allWords.Take(100).ToArray();
     }
 
     private void SearchStartsWith()
     {
         if (allWords == null) return;
 
-        var results = allWords
+        filteredWords = allWords
             .Where(w => w.StartsWith(searchInput, StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
-        viewedWords = results;
-        searchMessage = $"Herunder er {results.Length} ord som starter med \"{searchInput}\"";
+        visibleCount = 10;
+        searchMessage = $"Herunder er {filteredWords.Length} ord som starter med \"{searchInput}\"";
     }
 
     private void SearchContains()
     {
         if (allWords == null) return;
 
-        var results = allWords
+        filteredWords = allWords
             .Where(w => w.Contains(searchInput, StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
-        viewedWords = results;
-        searchMessage = $"Herunder er {results.Length} ord som indeholder \"{searchInput}\"";
+        visibleCount = 10;
+        searchMessage = $"Herunder er {filteredWords.Length} ord som indeholder \"{searchInput}\"";
+    }
+
+    private void ShowMore()
+    {
+        visibleCount += 10;
     }
 
     private async Task<string[]> LoadAllWords()
